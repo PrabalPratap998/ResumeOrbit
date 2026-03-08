@@ -1,0 +1,87 @@
+SARAH MARTINEZ
+Product Manager & UX Designer
+
+CONTACT INFORMATION
+Email: sarah.martinez@email.com
+Phone: (555) 987-6543
+LinkedIn: linkedin.com/in/sarahmartinez
+Portfolio: sarahmartinez.com
+Location: New York, NY
+
+PROFESSIONAL SUMMARY
+Results-driven Product Manager with 5+ years of experience leading cross-functional teams to deliver innovative digital products. Expertise in user research, market analysis, product strategy, and agile development. Proven ability to increase user engagement by 150% and drive product adoption. Passionate about solving complex problems through design thinking and data-driven decision making.
+
+PROFESSIONAL EXPERIENCE
+
+Senior Product Manager
+InnovateTech Corp | New York, NY | Mar 2022 - Present
+• Launched 3 major product features increasing monthly active users from 100K to 500K
+• Led cross-functional team of 8 (engineers, designers, analysts) in Agile environment
+• Conducted 50+ user interviews and usability testing sessions driving product improvements
+• Implemented data analytics framework increasing user retention by 45%
+• Managed product roadmap and defined OKRs achieving 95% of quarterly targets
+
+Product Manager
+DigitalBridge Solutions | New York, NY | Jan 2020 - Feb 2022
+• Owned mobile app product roadmap with $2M+ annual budget
+• Increased user engagement by 150% through feature optimization and A/B testing
+• Collaborated with engineering team to reduce app crashes from 5% to 0.2%
+• Designed and executed go-to-market strategy for new product line
+• Built and mentored team of 3 product analysts
+
+UX/UI Designer
+CreativeStudio | Brooklyn, NY | Jul 2018 - Dec 2019
+• Designed user interfaces for 5+ web and mobile applications
+• Conducted user research and created personas improving design decisions
+• Prototyped features using Figma achieving 30% faster development cycles
+• Led design system initiative improving consistency across all products
+• Collaborated with product and engineering teams in agile sprints
+
+EDUCATION
+
+Master of Business Administration (MBA)
+Columbia University | Graduated: May 2019
+Focus: Product Management and Entrepreneurship
+
+Bachelor of Science in Computer Science
+NYU Stern School of Business | Graduated: May 2017
+GPA: 3.7/4.0
+
+SKILLS
+Product Management: Product Strategy, Roadmapping, OKRs, User Stories, Agile, Scrum
+User Research: User Interviews, Usability Testing, Personas, Journey Mapping, User Analytics
+Design: Figma, Adobe XD, Wireframing, Prototyping, Design Thinking, Information Architecture
+Analytics: Google Analytics, Mixpanel, SQL, Tableau, A/B Testing, Metrics Definition
+Technical: Product Requirement Documents (PRD), API Integration, SQL, HTML/CSS basics
+Tools: JIRA, Confluence, Slack, Amplitude, Looker, ProductBoard
+Other: Team Leadership, Strategic Planning, Cross-functional Collaboration, Data Analysis
+
+CERTIFICATIONS
+Certified Agile Product Owner (CAPO) | 2021
+Google Analytics Certification | 2020
+Interaction Design Foundation Certificate | 2019
+
+PROJECTS
+Mobile Banking App Redesign
+• Led complete UX redesign of mobile app serving 2M+ users
+• Improved user satisfaction score from 3.2 to 4.6 out of 5.0
+• Reduced app abandonment rate by 35% through improved onboarding
+
+SaaS Platform Product Launch
+• Defined product strategy and led launch of B2B SaaS platform
+• Achieved 10,000 sign-ups in first month exceeding targets by 180%
+• Built product team from scratch with 4 direct reports
+
+Data Dashboard Initiative
+• Designed product analytics dashboard improving decision-making speed
+• Implemented event tracking across all products increasing data insights
+• Enabled data-driven decisions reducing feature development time by 40%
+
+LANGUAGES
+English (Native)
+Spanish (Fluent)
+French (Intermediate)
+
+AWARDS & RECOGNITION
+Product Leader of the Year Award - InnovateTech Corp | 2023
+Best UX Design Award - CreativeStudio | 2019

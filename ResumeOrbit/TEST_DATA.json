@@ -1,0 +1,384 @@
+{
+  "test_credentials": {
+    "register": {
+      "name": "Test User",
+      "email": "test@resumeorbit.com",
+      "password": "TestPassword123"
+    },
+    "login": {
+      "email": "test@resumeorbit.com",
+      "password": "TestPassword123"
+    }
+  },
+  "test_job_searches": [
+    {
+      "id": 1,
+      "title": "Full Stack Developer Search",
+      "keywords": "Python Developer",
+      "location": "Remote",
+      "expectedMatches": "High",
+      "bestResume": "sample_resume.txt",
+      "description": "Should find backend, full stack, and Python-related jobs"
+    },
+    {
+      "id": 2,
+      "title": "Senior Software Engineer",
+      "keywords": "Senior Software Engineer",
+      "location": "San Francisco",
+      "expectedMatches": "High",
+      "bestResume": "sample_resume.txt",
+      "description": "Should find senior level engineering positions"
+    },
+    {
+      "id": 3,
+      "title": "Product Manager Search",
+      "keywords": "Product Manager",
+      "location": "New York",
+      "expectedMatches": "High",
+      "bestResume": "sample_resume_2.txt",
+      "description": "Should find product management and strategy roles"
+    },
+    {
+      "id": 4,
+      "title": "UX Designer Search",
+      "keywords": "UX Designer",
+      "location": "Remote",
+      "expectedMatches": "High",
+      "bestResume": "sample_resume_2.txt",
+      "description": "Should find design and UX roles"
+    },
+    {
+      "id": 5,
+      "title": "Data Scientist Search",
+      "keywords": "Data Scientist",
+      "location": "Seattle",
+      "expectedMatches": "High",
+      "bestResume": "sample_resume_3.txt",
+      "description": "Should find data science and ML roles"
+    },
+    {
+      "id": 6,
+      "title": "Machine Learning Engineer",
+      "keywords": "Machine Learning Engineer",
+      "location": "Remote",
+      "expectedMatches": "High",
+      "bestResume": "sample_resume_3.txt",
+      "description": "Should find ML engineering positions"
+    },
+    {
+      "id": 7,
+      "title": "Frontend Developer",
+      "keywords": "Frontend Developer",
+      "location": "Remote",
+      "expectedMatches": "Medium",
+      "bestResume": "sample_resume.txt",
+      "description": "Should find frontend and React jobs (partial match)"
+    },
+    {
+      "id": 8,
+      "title": "DevOps Engineer",
+      "keywords": "DevOps Engineer",
+      "location": "Remote",
+      "expectedMatches": "Medium",
+      "bestResume": "sample_resume.txt",
+      "description": "Should find DevOps/Cloud roles (partial match with AWS skills)"
+    }
+  ],
+  "api_endpoints": {
+    "authentication": {
+      "register": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/auth/register",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Test User",
+          "email": "test@resumeorbit.com",
+          "password": "TestPassword123"
+        },
+        "expectedResponse": {
+          "success": true,
+          "token": "[JWT token]",
+          "user": {
+            "id": "integer",
+            "email": "test@resumeorbit.com",
+            "name": "Test User"
+          }
+        }
+      },
+      "login": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/auth/login",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "email": "test@resumeorbit.com",
+          "password": "TestPassword123"
+        },
+        "expectedResponse": {
+          "success": true,
+          "token": "[JWT token]",
+          "user": {
+            "id": "integer",
+            "email": "test@resumeorbit.com",
+            "name": "Test User"
+          }
+        }
+      }
+    },
+    "resume": {
+      "upload": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/resume/upload",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer [JWT_TOKEN]"
+        },
+        "body": {
+          "resume_text": "[resume content]",
+          "resume_name": "My Resume"
+        },
+        "expectedResponse": {
+          "resume": {
+            "id": "integer",
+            "user_id": "integer",
+            "name": "My Resume",
+            "parsed_data": {
+              "contact_info": {},
+              "summary": "string",
+              "experience": [],
+              "education": [],
+              "skills": [],
+              "certifications": [],
+              "projects": [],
+              "languages": []
+            }
+          }
+        }
+      },
+      "list": {
+        "method": "GET",
+        "url": "http://localhost:3001/api/resume/list",
+        "headers": {
+          "Authorization": "Bearer [JWT_TOKEN]"
+        },
+        "expectedResponse": {
+          "resumes": [
+            {
+              "id": "integer",
+              "name": "string",
+              "created_at": "timestamp"
+            }
+          ]
+        }
+      }
+    },
+    "jobs": {
+      "scrape": {
+        "method": "POST",
+        "url": "http://localhost:5000/scrape/jobs",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "keywords": "Python Developer",
+          "location": "Remote",
+          "pages": 1
+        },
+        "expectedResponse": {
+          "success": true,
+          "count": "integer",
+          "jobs": [
+            {
+              "job_id": "string",
+              "title": "string",
+              "company": "string",
+              "location": "string",
+              "description": "string",
+              "url": "string",
+              "source": "string (Indeed|LinkedIn|Glassdoor)"
+            }
+          ]
+        }
+      },
+      "match": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/jobs/match",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer [JWT_TOKEN]"
+        },
+        "body": {
+          "resume_id": "integer"
+        },
+        "expectedResponse": {
+          "matches": [
+            {
+              "job_id": "integer",
+              "job_title": "string",
+              "company": "string",
+              "location": "string",
+              "match_score": "float (0-100)",
+              "matched_skills": ["skill1", "skill2"],
+              "description": "string",
+              "job_url": "string"
+            }
+          ]
+        }
+      },
+      "apply": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/jobs/apply/:jobId",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer [JWT_TOKEN]"
+        },
+        "body": {
+          "resume_id": "integer"
+        },
+        "expectedResponse": {
+          "success": true,
+          "application": {
+            "id": "integer",
+            "job_id": "integer",
+            "resume_id": "integer",
+            "status": "applied",
+            "applied_at": "timestamp"
+          }
+        }
+      }
+    },
+    "parsing": {
+      "parse_text": {
+        "method": "POST",
+        "url": "http://localhost:5000/parse/text",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "resume_text": "[resume content]"
+        },
+        "expectedResponse": {
+          "success": true,
+          "data": {
+            "contact_info": {
+              "name": "string",
+              "email": "string",
+              "phone": "string",
+              "location": "string"
+            },
+            "summary": "string",
+            "experience": [
+              {
+                "job_title": "string",
+                "company": "string",
+                "duration": "string",
+                "description": [...]
+              }
+            ],
+            "education": [
+              {
+                "degree": "string",
+                "institution": "string",
+                "graduation_year": "string"
+              }
+            ],
+            "skills": ["skill1", "skill2", "skill3"],
+            "certifications": ["cert1", "cert2"],
+            "projects": ["project1", "project2"],
+            "languages": ["English", "Spanish"]
+          }
+        }
+      }
+    }
+  },
+  "test_scenarios": {
+    "happy_path": {
+      "name": "Complete User Journey",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Register new account",
+          "endpoint": "POST /api/auth/register",
+          "data": "See authentication.register"
+        },
+        {
+          "step": 2,
+          "action": "Upload resume",
+          "endpoint": "POST /api/resume/upload",
+          "data": "sample_resume.txt content"
+        },
+        {
+          "step": 3,
+          "action": "Search jobs",
+          "endpoint": "POST /scrape/jobs",
+          "data": "keywords: 'Python Developer', location: 'Remote'"
+        },
+        {
+          "step": 4,
+          "action": "Get job matches",
+          "endpoint": "POST /api/jobs/match",
+          "data": "resume_id: (from step 2)"
+        },
+        {
+          "step": 5,
+          "action": "Apply to top job",
+          "endpoint": "POST /api/jobs/apply/:jobId",
+          "data": "resume_id: (from step 2)"
+        },
+        {
+          "step": 6,
+          "action": "View applied jobs",
+          "endpoint": "GET /api/jobs/applied",
+          "data": "Should show the job from step 5"
+        }
+      ]
+    },
+    "error_cases": [
+      {
+        "scenario": "Invalid login",
+        "expected_status": 401,
+        "expected_message": "Invalid credentials"
+      },
+      {
+        "scenario": "Missing resume keywords",
+        "expected_status": 400,
+        "expected_message": "Keywords required"
+      },
+      {
+        "scenario": "Duplicate application",
+        "expected_status": 400,
+        "expected_message": "Already applied to this job"
+      },
+      {
+        "scenario": "Unauthorized access",
+        "expected_status": 401,
+        "expected_message": "Unauthorized"
+      }
+    ]
+  },
+  "performance_benchmarks": {
+    "resume_parsing": {
+      "description": "Time to parse a resume",
+      "target_ms": 2000,
+      "notes": "Should complete silently in background"
+    },
+    "job_scraping": {
+      "description": "Time to scrape jobs from all sources",
+      "target_ms": 15000,
+      "notes": "May take longer due to web scraping delays"
+    },
+    "job_matching": {
+      "description": "Time to match jobs with resume",
+      "target_ms": 1000,
+      "notes": "Should be fast as it's done locally"
+    },
+    "api_responses": {
+      "description": "Average API response time",
+      "target_ms": 500,
+      "notes": "Excluding external API calls"
+    }
+  }
+}

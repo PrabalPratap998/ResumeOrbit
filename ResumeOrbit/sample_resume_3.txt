@@ -1,0 +1,100 @@
+ALEX CHEN
+Data Scientist & ML Engineer
+
+CONTACT INFORMATION
+Email: alex.chen@email.com
+Phone: (555) 456-7890
+LinkedIn: linkedin.com/in/alexchen
+GitHub: github.com/alexchen
+Location: Seattle, WA
+
+PROFESSIONAL SUMMARY
+Experienced Data Scientist with 7+ years leveraging machine learning, statistical analysis, and big data technologies to drive business impact. Expert in building predictive models, implementing recommendation systems, and optimizing data pipelines. Proven ability to translate complex technical solutions into actionable business insights. Strong background in Python, SQL, and cloud platforms with demonstrated impact increasing revenue by $15M+.
+
+PROFESSIONAL EXPERIENCE
+
+Senior Data Scientist
+CloudScale AI | Seattle, WA | Feb 2022 - Present
+• Developed ML recommendation engine increasing user engagement by 60%
+• Built predictive churn model preventing loss of $5M+ annual revenue
+• Led team of 4 data scientists implementing production ML pipelines using TensorFlow
+• Implemented feature engineering framework reducing model training time from 8 hours to 30 minutes
+• Optimized random forest models achieving 94% accuracy for customer segmentation
+• Deployed models to production using Docker and Kubernetes handling 10M+ predictions daily
+
+Machine Learning Engineer
+DataScience Labs | San Francisco, CA | Jul 2020 - Jan 2022
+• Developed NLP-based text classification system processing 1M+ documents daily
+• Implemented deep learning models using PyTorch and TensorFlow for image recognition
+• Built complete ML pipeline from data ingestion to model deployment and monitoring
+• Established MLOps best practices reducing model iteration time by 50%
+• Created A/B testing framework validating 20+ ML experiments monthly
+
+Data Scientist
+InsightCore Analytics | Seattle, WA | Mar 2018 - Jun 2020
+• Analyzed large datasets using SQL and Python identifying $2M+ in optimization opportunities
+• Built machine learning models predicting customer behavior with 89% accuracy
+• Developed interactive dashboards using Tableau for executive stakeholders
+• Conducted statistical analysis and hypothesis testing informing product decisions
+• Created data validation tests ensuring 99.9% data quality compliance
+
+Data Analyst
+TechStartup Inc | Seattle, WA | Jan 2017 - Feb 2018
+• Analyzed user behavior data identifying key engagement drivers
+• Built automated reporting systems reducing manual analysis time by 30 hours/week
+• Collaborated with product team to define metrics and success criteria
+
+EDUCATION
+
+Master of Science in Computer Science (Machine Learning)
+University of Washington | Graduated: May 2016
+GPA: 3.9/4.0
+Thesis: Advanced Recommendation Systems using Graph Neural Networks
+
+Bachelor of Science in Statistics
+University of California, Berkeley | Graduated: May 2014
+GPA: 3.8/4.0
+
+SKILLS
+Machine Learning: Supervised Learning, Unsupervised Learning, Deep Learning, NLP, Computer Vision, Time Series Analysis, Recommendation Systems
+Programming: Python, R, SQL, Scala, Java, C++
+ML Frameworks: TensorFlow, PyTorch, Scikit-learn, XGBoost, Keras, LightGBM
+Big Data: Apache Spark, Hadoop, Hive, Airflow, Kafka
+Cloud & DevOps: AWS, Google Cloud, Azure, Docker, Kubernetes, Jenkins
+Data Tools: Pandas, NumPy, Jupyter, Git, Tableau, Looker, SQL Server
+Statistical Methods: Hypothesis Testing, A/B Testing, Regression Analysis, Bayesian Methods
+
+CERTIFICATIONS
+AWS Certified Machine Learning Specialist | 2023
+Google Cloud Professional Data Engineer | 2022
+Deep Learning Specialization - Coursera | 2021
+
+PROJECTS
+Customer Churn Prediction Model
+• Built gradient boosted machine learning model predicting customer churn with 91% precision
+• Identified 5000+ high-risk customers enabling targeted retention campaigns
+• Business impact: Prevented $5M+ in annual revenue loss
+
+Recommendation Engine Implementation
+• Developed collaborative filtering recommendation system serving 50M+ recommendations daily
+• Increased average order value by 25% and repeat purchase rate by 40%
+• Implemented in production handling 100K+ requests per second with <100ms latency
+
+NLP Text Classification Pipeline
+• Built deep learning NLP model classifying customer support tickets with 94% accuracy
+• Reduced manual ticket review time by 70% enabling faster response times
+• Processed 1M+ documents training on AWS SageMaker distributed clusters
+
+Time Series Forecasting Dashboard
+• Developed ARIMA and Prophet models forecasting sales with 87% accuracy
+• Created real-time dashboard for executive team enabling data-driven decisions
+• Reduced forecasting error margin by 35% vs traditional methods
+
+LANGUAGES
+English (Native)
+Mandarin Chinese (Fluent)
+Korean (Basic)
+
+PUBLICATIONS & SPEAKING
+"Advanced Recommendation Systems Using Graph Neural Networks" - Published in Journal of Machine Learning Research, 2021
+Speaker: AI/ML Summit 2023 - "Production Machine Learning Best Practices"
