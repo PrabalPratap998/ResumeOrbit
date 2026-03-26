@@ -1,0 +1,41 @@
+services:
+  python-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+    networks:
+      - resumeorbit-network
+
+  node-backend:
+    build:
+      context: ./resume-builder-js
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PYTHON_API_URL=http://python-backend:5000
+    volumes:
+      - ./resume-builder-js/data:/app/data
+    depends_on:
+      - python-backend
+    networks:
+      - resumeorbit-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:80"
+    depends_on:
+      - node-backend
+    networks:
+      - resumeorbit-network
+
+networks:
+  resumeorbit-network:
+    driver: bridge

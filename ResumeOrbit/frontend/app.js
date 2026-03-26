@@ -291,10 +291,13 @@ async function searchJobs() {
     document.getElementById('jobMatches').style.display = 'none';
 
     try {
-        // Scrape jobs from Python backend
-        const scrapeResponse = await fetch(`${PYTHON_API_URL}/scrape/jobs`, {
+        // Scrape jobs from Node backend (which saves them to DB)
+        const scrapeResponse = await fetch(`${API_URL}/jobs/scrape`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentToken}`
+            },
             body: JSON.stringify({
                 keywords: keywords,
                 location: location,

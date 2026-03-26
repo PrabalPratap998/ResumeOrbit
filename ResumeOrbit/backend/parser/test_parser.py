@@ -2,7 +2,7 @@
 Test script for the Resume Parser
 """
 
-from resume_parser import parse_resume
+from resume_parser_new import parse_resume
 import json
 
 

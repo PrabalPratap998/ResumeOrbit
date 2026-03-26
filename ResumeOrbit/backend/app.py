@@ -12,8 +12,8 @@ from werkzeug.utils import secure_filename
 # Add parser directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'parser'))
 
-from resume_parser import parse_resume
-from job_scraper import scrape_jobs
+from resume_parser_new import parse_resume
+from job_scraper_new import scrape_jobs
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
