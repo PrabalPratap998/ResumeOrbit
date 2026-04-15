@@ -47,7 +47,6 @@ ResumeOrbit/
 │   ├── index.html            # Main UI
 │   ├── app.js                # Frontend logic
 │   └── style.css             # Modern styling
-└── sample_resumes/           # Test data
 ```
 
 ## 🛠️ Tech Stack
@@ -193,11 +192,7 @@ GET  /api/jobs/matched/:resume_id  # Get matched jobs
 
 ## 🧪 Testing
 
-### Test Files
-Use the provided sample resumes:
-- `sample_resume.txt` - Full Stack Developer
-- `sample_resume_2.txt` - Product Manager
-- `sample_resume_3.txt` - Data Scientist
+Use your own resume text (paste into the UI or upload a file) to exercise parsing and job matching end-to-end.
 
 ### API Testing
 ```bash

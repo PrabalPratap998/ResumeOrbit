@@ -32,7 +32,7 @@ function verifyToken(req, res, next) {
 // Upload and parse resume
 router.post('/upload', verifyToken, async (req, res) => {
   try {
-    const { resume_text, resume_name } = req.body;
+    const { resume_text, resume_name, parsed_data } = req.body;
     const userId = req.user.id;
 
     if (!resume_text || !resume_name) {
@@ -42,25 +42,29 @@ router.post('/upload', verifyToken, async (req, res) => {
       });
     }
 
-    // Call Python API to parse resume
-    const parseResponse = await axios.post(`${PYTHON_API_URL}/parse/text`, {
-      resume_text: resume_text
-    });
+    let finalParsedData = parsed_data;
 
-    if (!parseResponse.data.success) {
-      return res.status(400).json({
-        error: 'Parsing failed',
-        message: parseResponse.data.message
+    // If parsed_data is not provided, call Python API to parse resume
+    if (!parsed_data) {
+      const parseResponse = await axios.post(`${PYTHON_API_URL}/parse/text`, {
+        resume_text: resume_text
       });
-    }
 
-    const parsedData = parseResponse.data.data;
+      if (!parseResponse.data.success) {
+        return res.status(400).json({
+          error: 'Parsing failed',
+          message: parseResponse.data.message
+        });
+      }
+
+      finalParsedData = parseResponse.data.data;
+    }
 
     // Save to database
     const result = await runQuery(
       `INSERT INTO resumes (user_id, name, raw_text, parsed_data) 
        VALUES (?, ?, ?, ?)`,
-      [userId, resume_name, resume_text, JSON.stringify(parsedData)]
+      [userId, resume_name, resume_text, JSON.stringify(finalParsedData)]
     );
 
     res.status(201).json({
@@ -69,7 +73,7 @@ router.post('/upload', verifyToken, async (req, res) => {
       resume: {
         id: result.id,
         name: resume_name,
-        parsed_data: parsedData
+        parsed_data: finalParsedData
       }
     });
   } catch (error) {

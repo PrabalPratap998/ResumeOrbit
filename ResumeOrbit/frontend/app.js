@@ -12,6 +12,72 @@ let currentResume = null;
 let currentResumeId = null;
 let parsedResume = null;
 
+function deriveJobSearchFromResume(parsedData) {
+    if (!parsedData || typeof parsedData !== 'object') {
+        return { keywords: '', location: '' };
+    }
+
+    const skills = Array.isArray(parsedData.skills) ? parsedData.skills : [];
+    const experience = Array.isArray(parsedData.experience) ? parsedData.experience : [];
+
+    const firstTitle = experience.find((item) => item && typeof item === 'object' && item.title)?.title;
+    const resumeLocation = parsedData?.contact_info?.location;
+
+    let keywords = '';
+
+    if (firstTitle && String(firstTitle).trim()) {
+        keywords = String(firstTitle).trim();
+    } else if (skills.length) {
+        keywords = skills
+            .map((s) => String(s || '').trim())
+            .filter(Boolean)
+            .slice(0, 3)
+            .join(' ');
+    } else if (parsedData.summary && String(parsedData.summary).trim()) {
+        keywords = String(parsedData.summary)
+            .trim()
+            .split(/\s+/)
+            .slice(0, 6)
+            .join(' ');
+    }
+
+    const location = resumeLocation && String(resumeLocation).trim() ? String(resumeLocation).trim() : '';
+
+    return { keywords, location };
+}
+
+function populateJobSearchFromResume(parsedData, { autoSearch = true } = {}) {
+    const { keywords, location } = deriveJobSearchFromResume(parsedData);
+
+    const keywordsInput = document.getElementById('jobKeywords');
+    const locationInput = document.getElementById('jobLocation');
+
+    if (!keywordsInput) {
+        return;
+    }
+
+    const hadKeywords = Boolean(keywordsInput.value && keywordsInput.value.trim());
+    const hadLocation = Boolean(locationInput?.value && locationInput.value.trim());
+
+    if (!hadKeywords && keywords) {
+        keywordsInput.value = keywords;
+    }
+
+    if (locationInput && !hadLocation && location) {
+        locationInput.value = location;
+    }
+
+    // Auto-run the search only if the user hasn't typed anything yet.
+    if (autoSearch && !hadKeywords && keywordsInput.value.trim() && currentResumeId) {
+        setTimeout(() => {
+            const stillEmptyBefore = !hadKeywords;
+            if (stillEmptyBefore && document.getElementById('jobKeywords')?.value.trim()) {
+                searchJobs();
+            }
+        }, 250);
+    }
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     checkToken();
@@ -53,7 +119,9 @@ async function verifyToken() {
 }
 
 async function login(event) {
-    event.preventDefault();
+    if (event && typeof event.preventDefault === 'function') {
+        event.preventDefault();
+    }
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
 
@@ -68,7 +136,7 @@ async function login(event) {
 
         if (!response.ok) {
             showError('loginError', data.message || 'Login failed');
-            return;
+            return false;
         }
 
         // Store token and user
@@ -79,13 +147,17 @@ async function login(event) {
         showDashboard();
         document.getElementById('loginEmail').value = '';
         document.getElementById('loginPassword').value = '';
+        return false;
     } catch (error) {
         showError('loginError', error.message);
+        return false;
     }
 }
 
 async function register(event) {
-    event.preventDefault();
+    if (event && typeof event.preventDefault === 'function') {
+        event.preventDefault();
+    }
     const name = document.getElementById('registerName').value;
     const email = document.getElementById('registerEmail').value;
     const password = document.getElementById('registerPassword').value;
@@ -101,7 +173,7 @@ async function register(event) {
 
         if (!response.ok) {
             showError('registerError', data.message || 'Registration failed');
-            return;
+            return false;
         }
 
         // Store token and user
@@ -113,8 +185,10 @@ async function register(event) {
         document.getElementById('registerName').value = '';
         document.getElementById('registerEmail').value = '';
         document.getElementById('registerPassword').value = '';
+        return false;
     } catch (error) {
         showError('registerError', error.message);
+        return false;
     }
 }
 
@@ -197,6 +271,8 @@ async function parseResume() {
         // Show job search section directly
         document.getElementById('jobSearchSection').style.display = 'block';
         document.getElementById('jobSearchSection').scrollIntoView({ behavior: 'smooth' });
+
+        populateJobSearchFromResume(parsedResume, { autoSearch: true });
     } catch (error) {
         hideLoader();
         showError('parseError', error.message);
@@ -232,7 +308,7 @@ async function parseResumeFile() {
             return;
         }
 
-        // Now save to Node backend
+        // Now save to Node backend with both raw text and parsed data
         const resumeResponse = await fetch(`${API_URL}/resume/upload`, {
             method: 'POST',
             headers: {
@@ -240,8 +316,9 @@ async function parseResumeFile() {
                 'Authorization': `Bearer ${currentToken}`
             },
             body: JSON.stringify({
-                resume_text: file.name,
-                resume_name: file.name
+                resume_text: parseData.raw_text || 'Uploaded file',
+                resume_name: file.name,
+                parsed_data: parseData.data
             })
         });
 
@@ -259,6 +336,8 @@ async function parseResumeFile() {
         // Show job search section directly without parsing display
         document.getElementById('jobSearchSection').style.display = 'block';
         document.getElementById('jobSearchSection').scrollIntoView({ behavior: 'smooth' });
+
+        populateJobSearchFromResume(parsedResume, { autoSearch: true });
     } catch (error) {
         hideLoader();
         showError('parseError', error.message);
@@ -272,6 +351,7 @@ function displayParsedResume() {
     
     // Auto-populate and search with common job keywords
     // User can modify and search if needed
+    populateJobSearchFromResume(parsedResume, { autoSearch: false });
 }
 
 // ========================
@@ -282,16 +362,25 @@ async function searchJobs() {
     const keywords = document.getElementById('jobKeywords').value.trim();
     const location = document.getElementById('jobLocation').value.trim();
 
+    console.log(`🔍 Searching jobs: keywords="${keywords}", location="${location}", resumeId="${currentResumeId}"`);
+
     if (!keywords) {
         showError('searchError', 'Please enter job keywords');
         return;
     }
 
-    // Silent search - no loader shown
+    if (!currentResumeId) {
+        showError('searchError', 'Please upload a resume first before searching for jobs');
+        return;
+    }
+
+    // Show loader
+    showLoader('Searching for jobs...');
     document.getElementById('jobMatches').style.display = 'none';
 
     try {
         // Scrape jobs from Node backend (which saves them to DB)
+        console.log('📞 Calling /jobs/scrape endpoint...');
         const scrapeResponse = await fetch(`${API_URL}/jobs/scrape`, {
             method: 'POST',
             headers: {
@@ -306,6 +395,7 @@ async function searchJobs() {
         });
 
         const scrapeData = await scrapeResponse.json();
+        console.log('📝 Scrape response:', scrapeData);
 
         if (!scrapeData.success) {
             hideLoader();
@@ -313,7 +403,10 @@ async function searchJobs() {
             return;
         }
 
+        console.log(`✅ Scraped ${scrapeData.jobs_count} jobs`);
+
         // Match jobs with resume
+        console.log(`⚙️ Calling /jobs/match endpoint with resume_id=${currentResumeId}...`);
         const matchResponse = await fetch(`${API_URL}/jobs/match`, {
             method: 'POST',
             headers: {
@@ -326,16 +419,20 @@ async function searchJobs() {
         });
 
         const matchData = await matchResponse.json();
+        console.log('🎯 Match response:', matchData);
         hideLoader();
 
         if (!matchResponse.ok) {
             showError('searchError', matchData.message || 'Matching failed');
+            console.error('Match endpoint error:', matchData);
             return;
         }
 
+        console.log(`✅ Received ${matchData.matches?.length || 0} matched jobs`);
         displayJobMatches(matchData.matches);
     } catch (error) {
         hideLoader();
+        console.error('Search error:', error);
         showError('searchError', error.message);
     }
 }

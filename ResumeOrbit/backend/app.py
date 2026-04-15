@@ -1,204 +1,158 @@
-"""
-Flask API server for Resume Parser
-Provides endpoints for parsing resumes via text input or file upload
-"""
-
+import os
+import uuid
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import os
-import sys
-from werkzeug.utils import secure_filename
 
-# Add parser directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'parser'))
-
-from resume_parser_new import parse_resume
+from parser.resume_parser_new import parse_resume
 from job_scraper_new import scrape_jobs
 
+try:
+    from PyPDF2 import PdfReader
+except Exception:  # pragma: no cover
+    PdfReader = None
+
+try:
+    import docx
+except Exception:  # pragma: no cover
+    docx = None
+
+
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-# Configuration
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx'}
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-
-# Create uploads folder if it doesn't exist
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
-def allowed_file(filename):
-    """Check if file extension is allowed."""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+def _read_txt(path: str) -> str:
+    with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+        return f.read()
 
 
-def extract_text_from_file(file_path):
-    """
-    Extract text from different file formats.
-    Supports .txt, .pdf (basic), .docx (basic)
-    """
-    file_ext = file_path.rsplit('.', 1)[1].lower()
-    
-    try:
-        if file_ext == 'txt':
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read()
-        
-        elif file_ext == 'pdf':
-            try:
-                import PyPDF2
-                text = ""
-                with open(file_path, 'rb') as f:
-                    pdf_reader = PyPDF2.PdfReader(f)
-                    for page in pdf_reader.pages:
-                        text += page.extract_text()
-                return text
-            except ImportError:
-                return "PDF support requires PyPDF2. Install with: pip install PyPDF2"
-        
-        elif file_ext == 'docx':
-            try:
-                from docx import Document
-                doc = Document(file_path)
-                text = ""
-                for paragraph in doc.paragraphs:
-                    text += paragraph.text + "\n"
-                return text
-            except ImportError:
-                return "DOCX support requires python-docx. Install with: pip install python-docx"
-        
-        else:
-            return "Unsupported file format"
-    
-    except Exception as e:
-        return f"Error reading file: {str(e)}"
+def _read_pdf(path: str) -> str:
+    if PdfReader is None:
+        raise RuntimeError('PDF support is not available. Install PyPDF2.')
+
+    reader = PdfReader(path)
+    text_parts = []
+    for page in reader.pages:
+        text_parts.append(page.extract_text() or '')
+    return '\n'.join(text_parts).strip()
+
+
+def _read_docx(path: str) -> str:
+    if docx is None:
+        raise RuntimeError('DOCX support is not available. Install python-docx.')
+
+    document = docx.Document(path)
+    return '\n'.join([p.text for p in document.paragraphs if p.text]).strip()
+
+
+def extract_text_from_file(file_path: str) -> str:
+    _, ext = os.path.splitext(file_path)
+    ext = ext.lower()
+
+    if ext in {'.txt'}:
+        return _read_txt(file_path)
+    if ext in {'.pdf'}:
+        return _read_pdf(file_path)
+    if ext in {'.docx'}:
+        return _read_docx(file_path)
+
+    raise RuntimeError(f'Unsupported file type: {ext}')
 
 
 @app.route('/', methods=['GET'])
-def home():
-    """Health check and API information."""
+def index():
     return jsonify({
         'status': 'online',
-        'message': 'Resume Parser API',
-        'version': '1.0',
+        'service': 'ResumeOrbit Python API',
         'endpoints': {
-            'POST /parse/text': 'Parse resume from text input',
-            'POST /parse/file': 'Parse resume from file upload',
-            'GET /health': 'Health check'
+            'parse_text': '/parse/text',
+            'parse_file': '/parse/file',
+            'scrape_jobs': '/scrape/jobs'
         }
-    })
-
-
-@app.route('/health', methods=['GET'])
-def health():
-    """Health check endpoint."""
-    return jsonify({'status': 'healthy'}), 200
+    }), 200
 
 
 @app.route('/parse/text', methods=['POST'])
-def parse_text():
-    """
-    Parse resume from text input.
-    
-    Expected JSON:
-    {
-        "resume_text": "Resume content here..."
-    }
-    """
+def parse_text_endpoint():
     try:
-        data = request.get_json()
-        
-        if not data or 'resume_text' not in data:
-            return jsonify({
-                'error': 'Missing resume_text field',
-                'message': 'Please provide resume_text in JSON body'
-            }), 400
-        
-        resume_text = data['resume_text'].strip()
-        
+        data = request.get_json(silent=True) or {}
+        resume_text = (data.get('resume_text') or '').strip()
+
         if not resume_text:
             return jsonify({
-                'error': 'Empty resume',
-                'message': 'Resume text cannot be empty'
+                'success': False,
+                'error': 'Missing resume_text',
+                'message': 'Please provide resume_text'
             }), 400
-        
-        # Parse the resume
+
         parsed_data = parse_resume(resume_text)
-        
+
         return jsonify({
             'success': True,
             'data': parsed_data
         }), 200
-    
+
     except Exception as e:
         return jsonify({
-            'error': 'Parsing error',
+            'success': False,
+            'error': 'Processing error',
             'message': str(e)
         }), 500
 
 
 @app.route('/parse/file', methods=['POST'])
-def parse_file():
-    """
-    Parse resume from file upload.
-    
-    Supported formats: .txt, .pdf, .docx
-    """
+def parse_file_endpoint():
     try:
-        # Check if file is in request
         if 'file' not in request.files:
             return jsonify({
-                'error': 'No file provided',
-                'message': 'Please upload a file'
+                'success': False,
+                'error': 'Missing file',
+                'message': 'No file uploaded'
             }), 400
-        
-        file = request.files['file']
-        
-        if file.filename == '':
+
+        uploaded_file = request.files['file']
+        if not uploaded_file or not uploaded_file.filename:
             return jsonify({
-                'error': 'No file selected',
-                'message': 'Please select a file to upload'
+                'success': False,
+                'error': 'Missing filename',
+                'message': 'Uploaded file has no filename'
             }), 400
-        
-        if not allowed_file(file.filename):
-            return jsonify({
-                'error': 'Invalid file type',
-                'message': f'Supported formats: {", ".join(ALLOWED_EXTENSIONS)}'
-            }), 400
-        
-        # Save and process file
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
-        
-        # Extract text
-        resume_text = extract_text_from_file(file_path)
-        
-        # Clean up
+
+        _, ext = os.path.splitext(uploaded_file.filename)
+        ext = ext.lower()
+        safe_name = f"{uuid.uuid4().hex}{ext}"
+        file_path = os.path.join(UPLOAD_DIR, safe_name)
+        uploaded_file.save(file_path)
+
         try:
-            os.remove(file_path)
-        except:
-            pass
-        
-        if not resume_text or resume_text.startswith('Error') or resume_text.startswith('PDF support'):
+            resume_text = extract_text_from_file(file_path)
+        finally:
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass
+
+        if not resume_text:
             return jsonify({
+                'success': False,
                 'error': 'File processing error',
-                'message': resume_text
+                'message': 'Could not extract text from file'
             }), 400
-        
-        # Parse the resume
+
         parsed_data = parse_resume(resume_text)
-        
+
         return jsonify({
             'success': True,
-            'data': parsed_data
+            'data': parsed_data,
+            'raw_text': resume_text
         }), 200
-    
+
     except Exception as e:
         return jsonify({
+            'success': False,
             'error': 'Processing error',
             'message': str(e)
         }), 500
@@ -206,53 +160,44 @@ def parse_file():
 
 @app.route('/scrape/jobs', methods=['POST'])
 def scrape_jobs_endpoint():
-    """
-    Scrape job listings from the web.
-    
-    Expected JSON:
-    {
-        "keywords": "Python Developer",
-        "location": "New York",
-        "pages": 1
-    }
-    """
     try:
-        data = request.get_json()
-        
-        if not data or 'keywords' not in data:
+        data = request.get_json(silent=True) or {}
+
+        if 'keywords' not in data:
             return jsonify({
+                'success': False,
                 'error': 'Missing keywords',
                 'message': 'Please provide job search keywords'
             }), 400
-        
-        keywords = data['keywords'].strip()
-        location = data.get('location', '').strip()
-        pages = int(data.get('pages', 1))
-        
+
+        keywords = str(data.get('keywords', '')).strip()
+        location = str(data.get('location', '')).strip()
+        pages = int(data.get('pages', 1) or 1)
+
         if not keywords:
             return jsonify({
+                'success': False,
                 'error': 'Empty keywords',
                 'message': 'Keywords cannot be empty'
             }), 400
-        
-        # Scrape jobs
+
         jobs = scrape_jobs(keywords, location, pages)
-        
+
         return jsonify({
             'success': True,
             'jobs': jobs,
             'total': len(jobs)
         }), 200
-    
+
     except Exception as e:
         return jsonify({
+            'success': False,
             'error': 'Scraping error',
             'message': str(e)
         }), 500
 
 
 if __name__ == '__main__':
-    print("🚀 Starting Resume Parser API Server...")
-    print("📍 Running on http://localhost:5000")
-    print("📚 API Documentation: http://localhost:5000")
+    print('🚀 Starting ResumeOrbit Python API Server...')
+    print('📍 Running on http://localhost:5000')
     app.run(debug=True, host='0.0.0.0', port=5000)

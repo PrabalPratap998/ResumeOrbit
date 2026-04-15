@@ -9,7 +9,7 @@ echo.
 
 REM Start Python Backend
 echo Starting Python Backend (Port 5000)...
-start "Python Backend" cmd /k "cd backend && call ..\.venv\Scripts\activate.bat && python app.py"
+start "Python Backend" cmd /k "cd backend && call venv\Scripts\activate.bat && python app.py"
 
 timeout /t 3 /nobreak >nul
 

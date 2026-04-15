@@ -11,6 +11,104 @@ const { runQuery, getQuery, allQuery } = require('../db/database');
 
 const SECRET = process.env.JWT_SECRET || 'resumeorbit-secret-key-change-in-production';
 const PYTHON_API_URL = process.env.PYTHON_API_URL || 'http://localhost:5000';
+const DEFAULT_MATCH_STRICTNESS = (process.env.MATCH_STRICTNESS || 'medium').toLowerCase();
+
+function getMinScoreForStrictness(strictness = DEFAULT_MATCH_STRICTNESS) {
+  const level = String(strictness || '').toLowerCase();
+  if (level === 'low') {
+    return 10;
+  }
+  if (level === 'high') {
+    return 30;
+  }
+  return 18;
+}
+
+function toSafeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function tokenize(text) {
+  if (!text || typeof text !== 'string') {
+    return [];
+  }
+
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9+#\s]/g, ' ')
+    .split(/\s+/)
+    .filter((token) => token.length >= 3);
+}
+
+function buildResumeSignals(parsedData = {}) {
+  const skills = toSafeArray(parsedData.skills)
+    .map((s) => String(s || '').trim())
+    .filter(Boolean);
+
+  const experienceTitles = toSafeArray(parsedData.experience)
+    .map((exp) => String(exp?.title || ''))
+    .filter(Boolean);
+
+  const projectNames = toSafeArray(parsedData.projects)
+    .map((project) => String(project?.name || ''))
+    .filter(Boolean);
+
+  const summary = String(parsedData.summary || '');
+  const degreeLines = toSafeArray(parsedData.education)
+    .map((edu) => String(edu?.degree || ''))
+    .filter(Boolean);
+
+  const textPool = [
+    ...skills,
+    ...experienceTitles,
+    ...projectNames,
+    ...degreeLines,
+    summary
+  ];
+
+  const tokenSet = new Set();
+  textPool.forEach((item) => tokenize(item).forEach((t) => tokenSet.add(t)));
+
+  return {
+    skills,
+    tokenSet,
+    hasSignals: skills.length > 0 || tokenSet.size > 0
+  };
+}
+
+function scoreJobAgainstResume(job, resumeSignals) {
+  const jobTitle = String(job.title || '');
+  const jobDescription = String(job.description || '');
+  const jobRequirements = String(job.requirements || '');
+
+  const jobText = `${jobTitle} ${jobDescription} ${jobRequirements}`.toLowerCase();
+  const jobTokens = new Set(tokenize(jobText));
+
+  const matchedSkills = resumeSignals.skills.filter((skill) => {
+    const normalized = skill.toLowerCase();
+    return normalized.length >= 2 && jobText.includes(normalized);
+  });
+
+  let keywordHits = 0;
+  resumeSignals.tokenSet.forEach((token) => {
+    if (jobTokens.has(token)) {
+      keywordHits += 1;
+    }
+  });
+
+  // Skills have the highest weight; token overlap adds secondary relevance.
+  const skillScore = matchedSkills.length * 22;
+  const keywordScore = keywordHits * 5;
+  const titleBoost = matchedSkills.some((s) => jobTitle.toLowerCase().includes(s.toLowerCase())) ? 8 : 0;
+  const rawScore = skillScore + keywordScore + titleBoost;
+  const matchScore = Math.min(rawScore, 100);
+
+  return {
+    matchedSkills,
+    keywordHits,
+    matchScore
+  };
+}
 
 // Middleware to verify token
 function verifyToken(req, res, next) {
@@ -34,6 +132,8 @@ router.post('/scrape', verifyToken, async (req, res) => {
   try {
     const { keywords, location, pages = 1 } = req.body;
 
+    console.log(`\n🔍 Job scraping request: keywords="${keywords}", location="${location}"`);
+
     if (!keywords) {
       return res.status(400).json({
         error: 'Missing keywords',
@@ -42,6 +142,7 @@ router.post('/scrape', verifyToken, async (req, res) => {
     }
 
     // Call Python API to scrape jobs
+    console.log(`📞 Calling Python API: ${PYTHON_API_URL}/scrape/jobs`);
     const scrapeResponse = await axios.post(`${PYTHON_API_URL}/scrape/jobs`, {
       keywords: keywords,
       location: location || '',
@@ -49,6 +150,7 @@ router.post('/scrape', verifyToken, async (req, res) => {
     });
 
     if (!scrapeResponse.data.success) {
+      console.log(`❌ Python API returned error: ${scrapeResponse.data.message}`);
       return res.status(400).json({
         error: 'Scraping failed',
         message: scrapeResponse.data.message
@@ -56,37 +158,73 @@ router.post('/scrape', verifyToken, async (req, res) => {
     }
 
     const jobs = scrapeResponse.data.jobs;
+    console.log(`📝 Python API returned ${jobs.length} jobs`);
+
+    // Clear old jobs before saving new ones
+    try {
+      await runQuery('DELETE FROM jobs WHERE 1=1');
+      console.log(`🗑️ Cleared old jobs from database`);
+    } catch (clearError) {
+      console.warn('Failed to clear old jobs:', clearError);
+    }
 
     // Save jobs to database
+    let savedCount = 0;
     for (const job of jobs) {
-      await runQuery(
-        `INSERT OR IGNORE INTO jobs 
-         (job_id, title, company, location, description, requirements, salary_range, job_url, source) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          job.id || `${job.company}-${job.title}-${Date.now()}`,
-          job.title,
-          job.company,
-          job.location || '',
-          job.description || '',
-          job.requirements || '',
-          job.salary_range || '',
-          job.url,
-          job.source || 'web'
-        ]
-      );
+      try {
+        const result = await runQuery(
+          `INSERT INTO jobs 
+           (job_id, title, company, location, description, requirements, salary_range, job_url, source) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            job.id || `${job.company}-${job.title}-${Date.now()}`,
+            job.title,
+            job.company,
+            job.location || '',
+            job.description || '',
+            job.requirements || '',
+            job.salary_range || job.salary || '',
+            job.url,
+            job.source || 'web'
+          ]
+        );
+        savedCount++;
+        console.log(`✅ Saved job: ${job.title} at ${job.company} (ID: ${result.id})`);
+      } catch (dbError) {
+        console.error(`❌ Error saving job "${job.title}":`, dbError.message);
+      }
     }
+
+    // Verify jobs were saved
+    const savedJobs = await allQuery('SELECT COUNT(*) as count FROM jobs');
+    console.log(`📊 Total jobs now in database: ${savedJobs[0].count}`);
 
     res.json({
       success: true,
-      message: `Scraped ${jobs.length} jobs`,
-      jobs_count: jobs.length
+      message: `Scraped ${savedCount} jobs`,
+      jobs_count: savedCount,
+      jobs: jobs
     });
   } catch (error) {
     console.error('Job scraping error:', error);
-    res.status(500).json({
+
+    const pythonMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      null;
+
+    const isConnRefused = error?.code === 'ECONNREFUSED' || /ECONNREFUSED/i.test(String(error?.message || ''));
+    const isTimeout = error?.code === 'ETIMEDOUT' || /timeout/i.test(String(error?.message || ''));
+
+    const message = isConnRefused
+      ? `Python backend is not reachable at ${PYTHON_API_URL}. Start the Python service on port 5000 (or set PYTHON_API_URL correctly).`
+      : isTimeout
+        ? `Python backend timed out at ${PYTHON_API_URL}. It may be down or taking too long to respond.`
+        : (pythonMessage || error.message);
+
+    res.status(isConnRefused ? 502 : 500).json({
       error: 'Scraping failed',
-      message: error.message
+      message
     });
   }
 });
@@ -94,8 +232,11 @@ router.post('/scrape', verifyToken, async (req, res) => {
 // Match jobs with resume
 router.post('/match', verifyToken, async (req, res) => {
   try {
-    const { resume_id } = req.body;
+    const { resume_id, strictness } = req.body;
     const userId = req.user.id;
+    const minMatchScore = getMinScoreForStrictness(strictness);
+
+    console.log(`\n📋 Matching jobs for resume ${resume_id} (user: ${userId})`);
 
     if (!resume_id) {
       return res.status(400).json({
@@ -111,6 +252,7 @@ router.post('/match', verifyToken, async (req, res) => {
     );
 
     if (!resume) {
+      console.log(`❌ Resume ${resume_id} not found for user ${userId}`);
       return res.status(404).json({
         error: 'Resume not found',
         message: 'Resume does not exist'
@@ -118,57 +260,87 @@ router.post('/match', verifyToken, async (req, res) => {
     }
 
     const parsedData = JSON.parse(resume.parsed_data || '{}');
-    const resumeSkills = parsedData.skills || [];
+    const resumeSignals = buildResumeSignals(parsedData);
+    console.log(`📊 Resume signals: skills=${resumeSignals.skills.length}, tokens=${resumeSignals.tokenSet.size}, strictness=${strictness || DEFAULT_MATCH_STRICTNESS}, min_score=${minMatchScore}`);
 
     // Get all jobs
     const jobs = await allQuery('SELECT * FROM jobs LIMIT 100');
+    console.log(`📝 Found ${jobs.length} jobs in database`);
+
+    if (jobs.length === 0) {
+      console.log(`⚠️ No jobs in database`);
+      return res.json({
+        success: true,
+        message: 'No jobs found',
+        matches: []
+      });
+    }
 
     // Calculate match scores
     const matches = [];
     for (const job of jobs) {
-      // Simple skill match scoring
-      const jobText = `${job.title} ${job.description || ''} ${job.requirements || ''}`.toLowerCase();
-      let matchedSkills = [];
-      let score = 0;
+      const { matchedSkills, keywordHits, matchScore } = scoreJobAgainstResume(job, resumeSignals);
 
-      for (const skill of resumeSkills) {
-        if (jobText.includes(skill.toLowerCase())) {
-          matchedSkills.push(skill);
-          score += 10;
-        }
+      // When resume signals exist, enforce a relevance floor to reduce generic role-only results.
+      if (resumeSignals.hasSignals && (matchScore < minMatchScore || keywordHits === 0)) {
+        continue;
       }
 
-      // Bonus for company/title match
-      if (score > 0 || matchedSkills.length > 0) {
-        const matchPercentage = Math.min((score / Math.max(resumeSkills.length, 1)) * 100, 100);
-        
-        matches.push({
-          job_id: job.id,
-          job_title: job.title,
-          company: job.company,
-          location: job.location,
-          job_url: job.job_url,
-          match_score: matchPercentage,
-          matched_skills: matchedSkills,
-          description: job.description?.substring(0, 200) + '...'
-        });
+      matches.push({
+        job_id: job.id,
+        job_title: job.title,
+        company: job.company,
+        location: job.location,
+        job_url: job.job_url,
+        match_score: matchScore,
+        matched_skills: matchedSkills,
+        description: job.description?.substring(0, 200) + '...',
+        source: job.source
+      });
 
-        // Save match to database
+      // Save match to database
+      try {
         await runQuery(
           `INSERT OR IGNORE INTO job_matches 
            (resume_id, job_id, match_score, matched_skills) 
            VALUES (?, ?, ?, ?)`,
-          [resume_id, job.id, matchPercentage, JSON.stringify(matchedSkills)]
+          [resume_id, job.id, matchScore, JSON.stringify(matchedSkills)]
         );
+      } catch (dbError) {
+        console.error(`Error saving match for job ${job.id}:`, dbError);
       }
+    }
+
+    // If filtering removed everything, return top jobs with score 0 instead of failing silently.
+    if (matches.length === 0) {
+      const fallbackJobs = jobs.slice(0, 10).map((job) => ({
+        job_id: job.id,
+        job_title: job.title,
+        company: job.company,
+        location: job.location,
+        job_url: job.job_url,
+        match_score: 0,
+        matched_skills: [],
+        description: job.description?.substring(0, 200) + '...',
+        source: job.source
+      }));
+
+      return res.json({
+        success: true,
+        message: 'No strong resume-based matches found. Showing latest jobs instead.',
+        total_jobs: jobs.length,
+        matches: fallbackJobs
+      });
     }
 
     // Sort by match score descending
     matches.sort((a, b) => b.match_score - a.match_score);
 
+    console.log(`✅ Returning ${matches.length} matched jobs`);
     res.json({
       success: true,
-      message: `Found ${matches.length} matching jobs`,
+      message: `Found ${matches.length} jobs`,
+      total_jobs: jobs.length,
       matches: matches
     });
   } catch (error) {
