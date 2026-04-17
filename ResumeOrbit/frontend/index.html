@@ -3,14 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ResumeOrbit - AI-Powered Resume Parser & Job Matcher</title>
+    <title>ResumeOrbit - Resume Parser & Job Matcher</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="orbital-bg" aria-hidden="true">
+        <span class="orbital-grid"></span>
+        <span class="orbital-ring ring-a"></span>
+        <span class="orbital-ring ring-b"></span>
+        <span class="orbital-glow glow-a"></span>
+        <span class="orbital-glow glow-b"></span>
+    </div>
+
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
-            <h1 class="nav-logo">🚀 ResumeOrbit</h1>
+            <h1 class="nav-logo">
+                <span class="logo-mark">RO</span>
+                <span>ResumeOrbit</span>
+            </h1>
             <div class="nav-menu">
                 <span id="navUser" class="nav-user" style="display: none;">
                     <span id="userName"></span>
@@ -30,8 +44,9 @@
     <div id="loginScreen" class="screen active">
         <div class="auth-container">
             <div class="auth-card">
+                <div class="eyebrow">Identity Verification</div>
                 <h1>Welcome Back</h1>
-                <p class="auth-subtitle">Login to your ResumeOrbit account</p>
+                <p class="auth-subtitle">Access your ResumeOrbit command center.</p>
 
                 <form onsubmit="return login(event)">
                     <div class="form-group">
@@ -60,8 +75,9 @@
     <div id="registerScreen" class="screen">
         <div class="auth-container">
             <div class="auth-card">
+                <div class="eyebrow">Initialize Account</div>
                 <h1>Create Account</h1>
-                <p class="auth-subtitle">Join ResumeOrbit today</p>
+                <p class="auth-subtitle">Build your profile and launch job targeting.</p>
 
                 <form onsubmit="return register(event)">
                     <div class="form-group">
@@ -98,8 +114,9 @@
         <div class="container">
             <header class="header">
                 <div class="header-content">
-                    <h1>Welcome to ResumeOrbit</h1>
-                    <p class="tagline">AI-Powered Resume Parser & Job Matcher</p>
+                    <div class="eyebrow">Precision Career Intelligence</div>
+                    <h1>ResumeOrbit Mission Console</h1>
+                    <p class="tagline">Parse resumes, map skill signals, and rank high-fit opportunities.</p>
                 </div>
             </header>
 
@@ -109,7 +126,7 @@
                     <section class="step-section">
                         <div class="step-header">
                             <div class="step-number">1</div>
-                            <h2>Upload Your Resume</h2>
+                            <h2>Resume Ingestion</h2>
                         </div>
 
                         <div class="tabs">
@@ -142,7 +159,7 @@
                     <section id="jobSearchSection" class="step-section" style="display: none;">
                         <div class="step-header">
                             <div class="step-number">2</div>
-                            <h2>Job Recommendations</h2>
+                            <h2>Opportunity Matching</h2>
                         </div>
 
                         <div class="search-form">
@@ -174,7 +191,7 @@
 
     <!-- Footer -->
     <footer class="footer">
-        <p>&copy; 2024 ResumeOrbit. AI-Powered Resume Parser & Job Matcher</p>
+        <p>&copy; 2024 ResumeOrbit. Resume Parser & Job Matcher</p>
     </footer>
 
     <script src="app.js"></script>

@@ -6,15 +6,34 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const compression = require('compression');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const app = express();
+const PORT = Number(process.env.PORT || 3001);
+
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(cors());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
+app.use(compression());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static('public'));
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many auth attempts. Please retry shortly.' }
+});
 
 // Import routes
 const authRoutes = require('./src/routes/auth');
@@ -27,6 +46,7 @@ const { initializeDatabase } = require('./src/db/database');
 initializeDatabase();
 
 // Routes
+app.use('/api/auth', authLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/resume', resumeRoutes);
 app.use('/api/jobs', jobRoutes);
@@ -60,11 +80,19 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`\n🚀 ResumeOrbit Backend Server running on http://localhost:${PORT}`);
   console.log(`📍 API Documentation: http://localhost:${PORT}`);
   console.log(`🔗 Frontend: http://localhost:8000\n`);
 });
+
+function shutdown(signal) {
+  console.log(`\nReceived ${signal}. Shutting down backend...`);
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 5000).unref();
+}
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 module.exports = app;

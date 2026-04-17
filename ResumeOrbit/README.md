@@ -1,12 +1,12 @@
-# ResumeOrbit - AI-Powered Resume Parser & Job Matcher
+# ResumeOrbit - Resume Parser & Job Matcher
 
-A comprehensive full-stack application that parses resumes using advanced NLP and matches them with relevant job opportunities. Upload your resume and discover personalized job recommendations based on your skills and experience.
+A comprehensive full-stack application that parses resumes using robust text processing and matches them with relevant job opportunities. Upload your resume and discover personalized job recommendations based on your skills and experience.
 
 ## 🚀 Features
 
 ### Resume Parsing
 - **Multiple Input Methods**: Paste resume text directly or upload files (TXT, PDF, DOCX)
-- **Advanced NLP**: Uses spaCy for Named Entity Recognition and pattern matching
+- **Advanced Parsing**: Uses spaCy for entity recognition and pattern matching
 - **Comprehensive Extraction**:
   - Contact Information (name, email, phone, location, LinkedIn, GitHub)
   - Professional Summary
@@ -35,7 +35,7 @@ ResumeOrbit/
 │   ├── app.py                 # Resume parsing & job scraping
 │   ├── requirements.txt       # Python dependencies
 │   └── parser/
-│       ├── resume_parser.py   # NLP parsing logic
+│       ├── resume_parser.py   # Parsing logic
 │       └── job_scraper.py     # Web scraping functionality
 ├── resume-builder-js/         # Node.js Express API
 │   ├── server.js              # User auth & job matching
@@ -328,7 +328,7 @@ MIT License - Free for personal and commercial use.
 
 ---
 
-**Built with ❤️ using modern web technologies and AI-powered NLP**
+**Built with ❤️ using modern web technologies and robust text parsing**
 pip install -r requirements.txt
 ```
 

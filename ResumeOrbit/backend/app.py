@@ -2,6 +2,7 @@ import os
 import uuid
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from waitress import serve
 
 from parser.resume_parser_new import parse_resume
 from job_scraper_new import scrape_jobs
@@ -19,6 +20,7 @@ except Exception:  # pragma: no cover
 
 app = Flask(__name__)
 CORS(app)
+app.config['JSON_SORT_KEYS'] = False
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -72,6 +74,14 @@ def index():
             'parse_file': '/parse/file',
             'scrape_jobs': '/scrape/jobs'
         }
+    }), 200
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({
+        'status': 'online',
+        'service': 'ResumeOrbit Python API'
     }), 200
 
 
@@ -198,6 +208,18 @@ def scrape_jobs_endpoint():
 
 
 if __name__ == '__main__':
+    host = os.getenv('HOST', '0.0.0.0')
+    port = int(os.getenv('PORT', '5000'))
+    debug = os.getenv('FLASK_DEBUG', '0').lower() in {'1', 'true', 'yes'}
+    threaded = os.getenv('FLASK_THREADED', '1').lower() in {'1', 'true', 'yes'}
+
     print('🚀 Starting ResumeOrbit Python API Server...')
-    print('📍 Running on http://localhost:5000')
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    print(f'📍 Running on http://localhost:{port}')
+    print(f'⚙️  Debug={debug} Threaded={threaded}')
+
+    if debug:
+        app.run(debug=True, host=host, port=port, threaded=threaded)
+    else:
+        thread_count = int(os.getenv('WAITRESS_THREADS', '12'))
+        print(f'⚙️  Waitress threads={thread_count}')
+        serve(app, host=host, port=port, threads=thread_count)

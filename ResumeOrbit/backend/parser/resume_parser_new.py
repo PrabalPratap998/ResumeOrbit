@@ -1,6 +1,6 @@
 """
-Resume Parser using regex and text processing
-A lightweight, reliable parser that doesn't require external NLP models
+Resume Parser using regex and text processing.
+A lightweight, reliable parser that does not require external model downloads.
 """
 
 import re
@@ -11,7 +11,7 @@ import datetime
 class ResumeParser:
     """
     Resume parser using regex patterns and text processing.
-    More reliable than NLP-based parsers and doesn't require model downloads.
+    More reliable than model-heavy parsers and does not require model downloads.
     """
 
     def __init__(self, resume_text: str):
@@ -395,7 +395,7 @@ class ResumeParser:
             'git', 'linux', 'windows', 'macos', 'vscode', 'intellij', 'eclipse', 'postman',
             'jira', 'confluence', 'slack', 'trello',
 
-            # Data Science & ML
+            # Data and Analytics
             'pandas', 'numpy', 'scikit-learn', 'tensorflow', 'pytorch', 'keras', 'jupyter',
             'tableau', 'power bi', 'matplotlib', 'seaborn',
 

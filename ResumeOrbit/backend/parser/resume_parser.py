@@ -6,8 +6,8 @@ from spacy.matcher import Matcher, PhraseMatcher
 
 class ResumeParser:
     """
-    Resume parser using spaCy NLP library for advanced text processing.
-    Uses Named Entity Recognition (NER) and pattern matching for accurate extraction.
+    Resume parser using spaCy for advanced text processing.
+    Uses entity recognition and pattern matching for accurate extraction.
     """
     
     def __init__(self, resume_text: str, model: str = "en_core_web_sm"):
@@ -19,7 +19,7 @@ class ResumeParser:
             model: spaCy model to use (default: en_core_web_sm)
         """
         try:
-            self.nlp = spacy.load(model)
+            self.spacy_model = spacy.load(model)
         except OSError:
             raise OSError(
                 f"Model '{model}' not found. Install it with: "
@@ -27,12 +27,12 @@ class ResumeParser:
             )
         
         self.resume_text = resume_text
-        self.doc = self.nlp(resume_text)
+        self.doc = self.spacy_model(resume_text)
         self._setup_matchers()
     
     def _setup_matchers(self):
         """Setup spaCy matchers for specific patterns."""
-        self.matcher = Matcher(self.nlp.vocab)
+        self.matcher = Matcher(self.spacy_model.vocab)
         
         # Email pattern
         self.matcher.add("EMAIL", [[{"LIKE_EMAIL": True}]])
@@ -70,7 +70,7 @@ class ResumeParser:
     
     def extract_contact_info(self) -> Dict:
         """
-        Extract contact information using spaCy NER.
+        Extract contact information using spaCy entity recognition.
         Extracts: name, email, phone, location, LinkedIn, GitHub
         """
         contact = {}
@@ -104,13 +104,13 @@ class ResumeParser:
         if github_match:
             contact['github'] = github_match.group(0)
         
-        # Name extraction using spaCy NER (PERSON entity)
+        # Name extraction using spaCy entities (PERSON)
         for ent in self.doc.ents:
             if ent.label_ == "PERSON":
                 contact['name'] = ent.text
                 break
         
-        # Location extraction using spaCy NER (GPE = Geopolitical Entity)
+        # Location extraction using spaCy entities (GPE)
         locations = [ent.text for ent in self.doc.ents if ent.label_ == "GPE"]
         if locations:
             contact['location'] = locations[0]
@@ -148,7 +148,7 @@ class ResumeParser:
     
     def extract_experience(self) -> List[Dict]:
         """
-        Extract work experience using spaCy NER for organizations and dates.
+        Extract work experience using spaCy entity recognition for organizations and dates.
         """
         experiences = []
         experience_section = self._get_section('experience')
@@ -157,7 +157,7 @@ class ResumeParser:
             return []
         
         # Process experience section with spaCy
-        exp_doc = self.nlp(experience_section)
+        exp_doc = self.spacy_model(experience_section)
         
         # Find organizations (ORG entities) and dates
         current_job = {}
@@ -178,7 +178,7 @@ class ResumeParser:
                 current_job = {'title': line}
             
             # Extract organization names using NER
-            line_doc = self.nlp(line)
+            line_doc = self.spacy_model(line)
             for ent in line_doc.ents:
                 if ent.label_ == "ORG":
                     current_job['company'] = ent.text
@@ -202,7 +202,7 @@ class ResumeParser:
     
     def extract_education(self) -> List[Dict]:
         """
-        Extract education using spaCy NER for organizations and dates.
+        Extract education using spaCy entity recognition for organizations and dates.
         """
         education = []
         edu_section = self._get_section('education')
@@ -210,7 +210,7 @@ class ResumeParser:
         if not edu_section:
             return []
         
-        edu_doc = self.nlp(edu_section)
+        edu_doc = self.spacy_model(edu_section)
         lines = edu_section.split('\n')
         
         current_edu = {}
@@ -229,7 +229,7 @@ class ResumeParser:
                 current_edu = {'degree': line}
             
             # University/Institution name using NER (ORG)
-            line_doc = self.nlp(line)
+            line_doc = self.spacy_model(line)
             for ent in line_doc.ents:
                 if ent.label_ == "ORG":
                     current_edu['institution'] = ent.text

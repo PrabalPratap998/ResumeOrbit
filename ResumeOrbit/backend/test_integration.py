@@ -23,7 +23,7 @@ WORK EXPERIENCE
 Senior Python Developer | Tech Corp | San Francisco, CA
 01/2020 - Present
 • Led development of REST APIs serving 100K+ users
-• Implemented machine learning models for recommendation system
+• Implemented recommendation models for the recommendation system
 • Mentored junior developers and improved code quality
 
 Python Developer | Startup Inc | San Francisco, CA
