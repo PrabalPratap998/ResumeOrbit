@@ -3,8 +3,8 @@
  * Handles: Auth, Resume Parsing, Job Scraping, Job Matching, Auto-Apply
  */
 
-const API_URL = 'http://localhost:3001/api';
-const PYTHON_API_URL = 'http://localhost:5000';
+const API_URL = '/api';
+const PYTHON_API_URL = '/python-api';
 
 let currentToken = null;
 let currentUser = null;
