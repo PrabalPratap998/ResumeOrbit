@@ -162,20 +162,65 @@
                             <h2>Opportunity Matching</h2>
                         </div>
 
-                        <div class="search-form">
-                            <input type="text" id="jobKeywords" placeholder="e.g., Python Developer, Frontend Engineer" class="search-input">
-                            <input type="text" id="jobLocation" placeholder="e.g., New York, Remote" class="search-input">
-                            <button class="btn btn-primary" onclick="searchJobs()">Search Jobs</button>
+                        <div class="tabs">
+                            <button class="tab-btn active" data-tab="job-search-tab">Search & Match</button>
+                            <button class="tab-btn" data-tab="job-history-tab">Application History</button>
                         </div>
 
-                        <div id="searchError" class="alert alert-error" style="display: none;"></div>
-                        <div id="searchLoader" class="loading-spinner" style="display: none;">
-                            <div class="spinner"></div>
-                            <p>Searching for jobs...</p>
+                        <!-- Search Tab -->
+                        <div id="job-search-tab" class="tab-content active">
+                            <div class="search-form">
+                                <input type="text" id="jobKeywords" placeholder="e.g., Python Developer, Frontend Engineer" class="search-input">
+                                <input type="text" id="jobLocation" placeholder="e.g., New York, Remote" class="search-input">
+                                <button class="btn btn-primary" onclick="searchJobs()">Search Jobs</button>
+                            </div>
+
+                            <div id="searchError" class="alert alert-error" style="display: none;"></div>
+                            <div id="searchLoader" class="loading-spinner" style="display: none;">
+                                <div class="spinner"></div>
+                                <p>Searching for jobs...</p>
+                            </div>
+
+                            <div id="jobMatches" class="jobs-container" style="display: none;">
+                                <!-- Job cards will be populated here -->
+                            </div>
+
+                            <div id="autoApplyPanel" class="auto-apply-panel" style="display: none;">
+                                <h3>LinkedIn Auto Apply</h3>
+                                <p class="auto-apply-note">
+                                    Runs only on matched LinkedIn jobs. Start with Dry Run to verify before real submissions.
+                                </p>
+
+                                <div class="auto-apply-grid">
+                                    <input type="email" id="linkedinEmail" placeholder="LinkedIn email" class="search-input">
+                                    <input type="password" id="linkedinPassword" placeholder="LinkedIn password" class="search-input">
+                                    <input type="number" id="autoApplyMax" min="1" max="25" value="5" class="search-input" placeholder="Max applications">
+                                    <input type="number" id="autoApplyMinScore" min="0" max="100" value="65" class="search-input" placeholder="Min match score">
+                                </div>
+
+                                <div class="auto-apply-actions">
+                                    <label class="checkbox-wrap">
+                                        <input type="checkbox" id="autoApplyDryRun" checked>
+                                        <span>Dry Run (recommended first)</span>
+                                    </label>
+                                    <button class="btn btn-primary" onclick="setupAndAutoApply()">Run Auto Apply</button>
+                                    <button class="btn btn-secondary" onclick="clearLinkedInSession()">Clear Credentials</button>
+                                </div>
+
+                                <div id="autoApplyResult" class="auto-apply-result" style="display: none;"></div>
+                            </div>
                         </div>
 
-                        <div id="jobMatches" class="jobs-container" style="display: none;">
-                            <!-- Job cards will be populated here -->
+                        <!-- History Tab -->
+                        <div id="job-history-tab" class="tab-content">
+                            <div class="history-controls">
+                                <button class="btn btn-secondary" onclick="loadApplicationHistory()">Refresh History</button>
+                            </div>
+                            <div id="applicationHistory" class="application-history" style="display: none;"></div>
+                            <div id="historyLoader" class="loading-spinner" style="display: none;">
+                                <div class="spinner"></div>
+                                <p>Loading application history...</p>
+                            </div>
                         </div>
                     </section>
                 </div>
@@ -194,6 +239,6 @@
         <p>&copy; 2024 ResumeOrbit. Resume Parser & Job Matcher</p>
     </footer>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=2"></script>
 </body>
 </html>

@@ -6,6 +6,7 @@ from waitress import serve
 
 from parser.resume_parser_new import parse_resume
 from job_scraper_new import scrape_jobs
+from linkedin_auto_apply import auto_apply_linkedin_jobs
 
 try:
     from PyPDF2 import PdfReader
@@ -72,7 +73,8 @@ def index():
         'endpoints': {
             'parse_text': '/parse/text',
             'parse_file': '/parse/file',
-            'scrape_jobs': '/scrape/jobs'
+            'scrape_jobs': '/scrape/jobs',
+            'auto_apply': '/apply/auto'
         }
     }), 200
 
@@ -203,6 +205,64 @@ def scrape_jobs_endpoint():
         return jsonify({
             'success': False,
             'error': 'Scraping error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/apply/auto', methods=['POST'])
+def auto_apply_endpoint():
+    try:
+        data = request.get_json(silent=True) or {}
+
+        platform = str(data.get('platform', 'linkedin')).strip().lower()
+        if platform != 'linkedin':
+            return jsonify({
+                'success': False,
+                'error': 'Unsupported platform',
+                'message': 'Only linkedin platform is currently supported'
+            }), 400
+
+        linkedin_email = str(data.get('linkedin_email', '')).strip()
+        linkedin_password = str(data.get('linkedin_password', '')).strip()
+        jobs = data.get('jobs') or []
+        dry_run = bool(data.get('dry_run', True))
+        headless = bool(data.get('headless', True))
+
+        try:
+            max_applications = int(data.get('max_applications', 5) or 5)
+        except Exception:
+            max_applications = 5
+
+        if not linkedin_email or not linkedin_password:
+            return jsonify({
+                'success': False,
+                'error': 'Missing credentials',
+                'message': 'Please provide linkedin_email and linkedin_password'
+            }), 400
+
+        if not isinstance(jobs, list) or not jobs:
+            return jsonify({
+                'success': False,
+                'error': 'Missing jobs',
+                'message': 'Please provide a non-empty jobs list'
+            }), 400
+
+        result = auto_apply_linkedin_jobs(
+            linkedin_email=linkedin_email,
+            linkedin_password=linkedin_password,
+            jobs=jobs,
+            max_applications=max_applications,
+            dry_run=dry_run,
+            headless=headless
+        )
+
+        status_code = 200 if result.get('success') else 400
+        return jsonify(result), status_code
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': 'Auto apply error',
             'message': str(e)
         }), 500
 

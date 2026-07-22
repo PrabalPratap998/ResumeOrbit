@@ -36,7 +36,7 @@ const authLimiter = rateLimit({
 });
 
 // Import routes
-const authRoutes = require('./src/routes/auth');
+const { router: authRoutes, userSessions } = require('./src/routes/auth');
 const resumeRoutes = require('./src/routes/resume');
 const jobRoutes = require('./src/routes/jobs');
 const userRoutes = require('./src/routes/user');
@@ -44,6 +44,9 @@ const userRoutes = require('./src/routes/user');
 // Initialize database
 const { initializeDatabase } = require('./src/db/database');
 initializeDatabase();
+
+// Make userSessions available globally for jobs route
+global.userSessions = userSessions;
 
 // Routes
 app.use('/api/auth', authLimiter);

@@ -465,22 +465,168 @@ router.post('/apply/:job_id', verifyToken, async (req, res) => {
   }
 });
 
+// Auto-apply to matched LinkedIn jobs (uses session credentials)
+router.post('/auto-apply', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const {
+      resume_id,
+      max_applications = 5,
+      min_match_score = 65,
+      dry_run = true,
+      headless = true
+    } = req.body;
+
+    // Retrieve credentials from session instead of request body
+    const session = global.userSessions?.get(userId);
+    if (!session) {
+      return res.status(401).json({
+        error: 'No session credentials',
+        message: 'Please store LinkedIn credentials via /auth/session/credentials first'
+      });
+    }
+
+    const linkedin_email = session.linkedin_email;
+    const linkedin_password = session.linkedin_password;
+
+    if (!resume_id) {
+      return res.status(400).json({
+        error: 'Missing resume_id',
+        message: 'Please provide a resume ID'
+      });
+    }
+
+    const resume = await getQuery(
+      'SELECT id FROM resumes WHERE id = ? AND user_id = ?',
+      [resume_id, userId]
+    );
+
+    if (!resume) {
+      return res.status(404).json({
+        error: 'Resume not found',
+        message: 'Resume does not exist for this user'
+      });
+    }
+
+    const matchedJobs = await allQuery(
+      `SELECT jm.match_score, j.id AS job_id, j.title, j.company, j.job_url, j.source
+       FROM job_matches jm
+       JOIN jobs j ON jm.job_id = j.id
+       WHERE jm.resume_id = ?
+         AND COALESCE(jm.match_score, 0) >= ?
+         AND LOWER(COALESCE(j.source, '')) = 'linkedin'
+         AND j.job_url IS NOT NULL
+       ORDER BY jm.match_score DESC
+       LIMIT 50`,
+      [resume_id, Number(min_match_score) || 0]
+    );
+
+    if (!matchedJobs.length) {
+      return res.status(404).json({
+        error: 'No matched jobs',
+        message: 'No LinkedIn matched jobs available for auto-apply at this score threshold.'
+      });
+    }
+
+    const jobsPayload = matchedJobs.map((job) => ({
+      job_id: job.job_id,
+      title: job.title,
+      company: job.company,
+      job_url: job.job_url
+    }));
+
+    const pythonResponse = await axios.post(`${PYTHON_API_URL}/apply/auto`, {
+      platform: 'linkedin',
+      linkedin_email,
+      linkedin_password,
+      jobs: jobsPayload,
+      max_applications: Number(max_applications) || 5,
+      dry_run: Boolean(dry_run),
+      headless: Boolean(headless)
+    });
+
+    const autoApplyResult = pythonResponse.data || {};
+    const runResults = Array.isArray(autoApplyResult.results) ? autoApplyResult.results : [];
+
+    // Persist outcome in applied_jobs while preventing duplicates.
+    for (const item of runResults) {
+      const jobId = Number(item.job_id);
+      if (!jobId) {
+        continue;
+      }
+
+      const existingApplication = await getQuery(
+        'SELECT id FROM applied_jobs WHERE user_id = ? AND job_id = ?',
+        [userId, jobId]
+      );
+
+      if (existingApplication) {
+        continue;
+      }
+
+      await runQuery(
+        `INSERT INTO applied_jobs (user_id, job_id, resume_id, status, application_method, response)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          userId,
+          jobId,
+          resume_id,
+          String(item.status || 'unknown'),
+          dry_run ? 'linkedin_auto_dry_run' : 'linkedin_auto',
+          String(item.message || '')
+        ]
+      );
+    }
+
+    res.json({
+      success: true,
+      message: autoApplyResult.message || 'Auto-apply run completed.',
+      summary: autoApplyResult.summary || {},
+      results: runResults
+    });
+  } catch (error) {
+    console.error('Auto-apply error:', error);
+
+    const pythonMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error.message;
+
+    res.status(500).json({
+      error: 'Auto-apply failed',
+      message: pythonMessage
+    });
+  }
+});
+
 // Get applied jobs
 router.get('/applied', verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
+    const { limit = 100 } = req.query;
 
     const appliedJobs = await allQuery(
-      `SELECT aj.*, j.title, j.company, j.job_url, j.location
+      `SELECT aj.*, j.title, j.company, j.job_url, j.location, j.source
        FROM applied_jobs aj
        JOIN jobs j ON aj.job_id = j.id
        WHERE aj.user_id = ?
-       ORDER BY aj.applied_at DESC`,
-      [userId]
+       ORDER BY aj.applied_at DESC
+       LIMIT ?`,
+      [userId, Number(limit) || 100]
     );
+
+    const stats = {
+      total: appliedJobs.length,
+      applied: appliedJobs.filter(j => j.status === 'applied').length,
+      would_apply: appliedJobs.filter(j => j.status === 'would_apply').length,
+      needs_review: appliedJobs.filter(j => j.status === 'needs_review').length,
+      skipped: appliedJobs.filter(j => j.status === 'skipped').length,
+      failed: appliedJobs.filter(j => j.status === 'failed').length
+    };
 
     res.json({
       success: true,
+      stats,
       total: appliedJobs.length,
       jobs: appliedJobs
     });
